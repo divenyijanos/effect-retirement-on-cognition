@@ -1,5 +1,5 @@
-effect-retirement-on-cognition
-==============================
+The effect of retirement on cognitive performance
+==================================================
 
 Repo for my paper on the effect of retirement on cognitive performance
 

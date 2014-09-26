@@ -40,7 +40,6 @@ quietly sum yrs_in_ret
 local yrs = trim("`: display %9.1f r(mean) '")
 tempname yrs6064
 file open `yrs6064' using "../text/replication/retirement-years_60-64.txt", write replace
-file write `yrs6064' 
 file write `yrs6064' `" `yrs' "' /*"technical comment*/
 file close `yrs6064'
 
