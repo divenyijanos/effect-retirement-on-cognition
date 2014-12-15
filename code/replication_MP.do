@@ -2,8 +2,6 @@
 * REPLICATION OF MAZZONNA-PERACCHI (2012)
 *=========================================
 
-* written by Janos Divenyi, Sep 2014
-
 /*
 Description
 - They use the 2004 wave of SHARE  --> CS analysis
@@ -17,7 +15,7 @@ clear all
 set more off
 
 #delimit ;
-local esttab_opt " 
+local esttab_opt "
     f replace
     booktabs label collabels(none)
     star(* 0.10 ** 0.05 *** 0.01)
@@ -103,7 +101,7 @@ quietly sum yrs_in_ret
 local yrs = trim("`: display %9.1f r(mean) '")
 tempname yrs5070
 file open `yrs5070' using "../text/replication/retirement-years_50-70.txt", write replace
-file write `yrs5070' 
+file write `yrs5070'
 file write `yrs5070' `" `yrs' "' /*"*/
 file close `yrs5070'
 
@@ -115,7 +113,7 @@ eststo: ivreg2 twr_st (yrs_in_ret = edist_mp ndist_mp), savefirst savefprefix(fy
 * controlling for worked at 50
 drop twr_st
 keep if jobsit <= 3
-keep if worked_at50 == 1 
+keep if worked_at50 == 1
 sum yrs_in_ret
 
 quietly sum twr

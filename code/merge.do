@@ -2,12 +2,12 @@
 ***** CREATING MERGED WORKFILE FROM WAVES 1 2 & 4 *****
 *******************************************************
 * merge and clear, creates: merged_waves.dta
-* last updated: 5th June, 2014, by J.K. Divényi
 
 clear
 set more off
 
-global rawdata ../../share_data
+* You should pass the path to the folder of raw data when running this file
+global rawdata `1'
 
 tempfile wave1 wave2 wave4
 
@@ -17,14 +17,14 @@ foreach num of numlist 1 2 {
 
    	* COVER
 	local cover mergeid gender mobirth yrbirth cvidp ///
-        mstat int_year* int_month* 
+        mstat int_year* int_month*
 	use `cover' using $rawdata/w`num'/sharew`num'_rel2-6-0_cv_r, clear
 	drop if mergeid=="no int w.`num'"
 	rename int_year iv_year
 	rename int_month iv_month
     gen wave = `num'
 	save `wave`num'', replace
-	
+
     * IMPUTATION
 	use implicat mergeid country wave* edu  hgtincv hnetwv ///
 	    numeracy /*various questions*/ ///
@@ -50,13 +50,13 @@ foreach num of numlist 1 2 {
     sort mergeid
 	merge 1:1 mergeid using `wave`num'', keep(match) nogenerate
 	save `wave`num'', replace
-   
+
     use $rawdata/w`num'/sharew`num'_rel2-6-0_gs, clear
     keep mergeid gs006_ gs007_ gs008_ gs009_
     sort mergeid
     merge 1:1 mergeid using `wave`num'', keep(match) nogenerate
     save `wave`num'', replace
- 
+
 	* EMPLOYMENT
 	use $rawdata/w`num'/sharew`num'_rel2-6-0_ep, clear
     capture rename ep009_1 ep009
@@ -64,7 +64,7 @@ foreach num of numlist 1 2 {
     keep mergeid ep002 ep005_ ep013* ep037 ep050 ep009 ep021 ep064d*
 	merge 1:1 mergeid using `wave`num'', keep(match) nogenerate
 	save `wave`num'', replace
-    
+
     * DEMOGRAPHICS
     use mergeid ch001 using $rawdata/w`num'/sharew`num'_rel2-6-0_ch, clear
     sort mergeid
@@ -81,7 +81,7 @@ use mergeid iscedy_r using $rawdata/w1/sharew1_rel2-6-0_gv_isced,clear
 sort mergeid
 drop if mergeid=="no int w.1"
 merge 1:1 mergeid using `wave1', keep(match) nogenerate
-save `wave1', replace	
+save `wave1', replace
 
 *End of life from wave 3 and 4*
 use mergeid sl_xt009 using $rawdata/w3/sharew3_rel1_xt, clear
@@ -98,7 +98,7 @@ save `wave2', replace
 
 
 * Put together the waves
-append using `wave1'		
+append using `wave1'
 
 * Renaming those which are different in wave 4
 rename iscedy_r yeduc
@@ -117,16 +117,16 @@ save ../data/merged_waves, replace
 ** MERGE WAVE 4 **
 
 	* COVER
-	local cover4 `cover' country mobirthp yrbirthp waveid 
+	local cover4 `cover' country mobirthp yrbirthp waveid
     use `cover4' using $rawdata/w4/sharew4_rel1-0-0_cv_r
     drop gender /*get later from imputations*/
     drop if mergeid == "no int w.4"
     rename int_year iv_year
 	rename int_month iv_month
 	gen wave = 4
-	
+
 	save `wave4'
-	
+
 	* COGNITIVE
 	use mergeid cf001-cf002 using $rawdata/w4/sharew4_rel1-0-0_cf, clear
 	sort mergeid
@@ -135,21 +135,21 @@ save ../data/merged_waves, replace
 
     *IMPUTATIONS*
     local keepimput mergeid implicat gender yeduc cjs pwork ///
-         chronic bmi eurod adl iadl sphus  wllft wllst fluency numeracy1 
+         chronic bmi eurod adl iadl sphus  wllft wllst fluency numeracy1
     use `keepimput' using $rawdata/w4/sharew4_rel1-0-1_gv_imputations, clear
     rename cjs ep005_ /*same naming as in waves 1&2*/
     rename pwork ep002_
-    rename wllft cf008tot     
+    rename wllft cf008tot
     rename wllst cf016tot
     rename numeracy1 numeracy
     rename fluency cf010_
     keep if implicat == 1 /* 5 imputation for each observation */
     drop implicat
-   
+
     sort mergeid
     merge 1:1 mergeid using `wave4', keep(match) nogenerate
 	save `wave4', replace
-        
+
     * GRIP STRENGTH
     use $rawdata/w4/sharew4_rel1-0-0_gs, clear
     keep mergeid gs006_ gs007_ gs008_ gs009_
@@ -160,7 +160,7 @@ save ../data/merged_waves, replace
 
     * EMPLOYMENT
     use $rawdata/w4/sharew4_rel1-0-0_ep, clear
-    keep mergeid ep013 
+    keep mergeid ep013
     rename ep013 wrkhrs
     sort mergeid
 
@@ -214,7 +214,7 @@ rename ep009 jobtype
 rename ep021 responsible
 rename ep050 y_last_job_end
 
-* Health 
+* Health
 rename gs006 gs_l1
 rename gs007 gs_l2
 rename gs008 gs_r1
@@ -263,7 +263,7 @@ sort mergeid wave
 replace iv_year=2011 if iv_year==. /*some are missing for wave 4*/
 replace iv_month=1 if iv_month==. /*arbitrarily choose january*/
 
-by mergeid: egen mbirth=max(mobirth) /*imput missing*/
+by mergeid: egen mbirth=max(mobirth) /*impute missing*/
 by mergeid: egen ybirth=max(yrbirth)
 drop mobirth yrbirth
 
@@ -281,7 +281,14 @@ lab var relevantage "aged between 50 and 75 (dummy)"
 gen byte male= 2-gender
 gen byte female= gender-1
 lab var female "Female"
-	
+
+gen temp_c = substr(mergeid, 1, 2) /* impute country from mergeid */
+*tab temp_c if country == .
+replace country = 17 if temp_c == "FR"
+replace country = 25 if temp_c == "Ia" | temp_c == "Ih" | temp_c == "Ir"
+replace country = 30 if temp_c == "IE"
+drop temp_c
+
 * Job situation dummies
 gen ret=(jobsit==1) if jobsit<.
 lab var ret "Retired"
@@ -298,7 +305,7 @@ lab var js_other "Other, mainly homemaker"
 
 * Reason for retirement
 gen retired_eligibility = 0
-    replace retired_eligibility = 1 if ep064d1 == 1 | ep064d2 == 1 | ep064d3 == 1 
+    replace retired_eligibility = 1 if ep064d1 == 1 | ep064d2 == 1 | ep064d3 == 1
 
 * Education
 by mergeid: egen isced=max(isced_r) /*imput missing*/
@@ -316,7 +323,7 @@ lab var educ_other "Other and still in school"
 
 mvdecode yeduc, mv(-1 -2 95 97)
 by mergeid: egen yeduc_m=max(yeduc)  	/*imput missing*/
-	replace yeduc=yeduc_m if yeduc==. 
+	replace yeduc=yeduc_m if yeduc==.
 
 /*
 

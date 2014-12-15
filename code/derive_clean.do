@@ -1,7 +1,6 @@
 
 *** THE EFFECT OF RETIREMENT ON COGNITIVE PERFORMANCE ***
 ** CREATING DERIVED FOR FURTHER ANALYSIS
-* last updated: Sep, 2014, J. Divenyi
 
 clear all
 set more off
@@ -15,13 +14,16 @@ lab var twr "Total word recall (first+delayed)"
 
 *age
 gen agesq = age^2
-by mergeid, sort: egen age1 = min(age)
-gen temp_age2 = age if wave == 2
-by mergeid, sort: egen age2 = min(temp_age2)
+
+foreach num of numlist 1 2 4 {
+    gen temp_age`num' = age if wave == `num'
+    by mergeid, sort: egen age`num' = min(temp_age`num')
+    lab var age`num' "Age at wave `num'"
+}
+
 by mergeid: egen ydecease = max(yrdeath)
 drop yrdeath temp_*
-lab var age1 "Age at wave 1"
-lab var age2 "Age at wave 2"
+
 
 egen age_cat = cut(age), at(50(5)70)
 replace age_cat = 70 if age >= 70
@@ -41,7 +43,7 @@ foreach var of varlist genhealth selfread selfwrite {
 
 * Other definitions for job situation (did paid work, working hours)
 gen emp_work = (emp==1) if emp < .
-replace emp_work = 1 if didpaidwork==1 
+replace emp_work = 1 if didpaidwork==1
        /*didpaidwork not asked from those who have jobsit=emp*/
 lab var emp_work "Employed (did any paid work last 4 w | jobsit=emp)"
 
@@ -53,16 +55,16 @@ replace wrkhrs = 0 if wrkhrs >= . & jobsit < .
 replace wrkhrs = . if wrkhrs < 0
 
 foreach num of numlist 0 15 20 {
-	gen emp_h`num' = 0  if jobsit < . 
+	gen emp_h`num' = 0  if jobsit < .
         /* generate variable for all who have obs for jobsit */
-	replace emp_h`num' = 1 if wrkhrs > `num' & wrkhrs < . 
+	replace emp_h`num' = 1 if wrkhrs > `num' & wrkhrs < .
         /* define employed as worked some hours */
 	lab var emp_h`num' "Employed (worked `num'+ hours)"
 	}
 
 gen ret_h = (ret==1) if jobsit < .
 replace ret_h = 0 if wrkhrs > 0 & wrkhrs < .
-lab var ret_h "Retired (and don't work any (+)hours)" 
+lab var ret_h "Retired (and don't work any (+)hours)"
     /*zero hours alone would not surely mean retirement*/
 
 
@@ -81,11 +83,11 @@ gen countrycode = ""
     replace countrycode = "CH" if country == 20
     replace countrycode = "BE" if country == 23
 
-	
+
 * attach PISA2000 scores
 merge m:1 country using ../data/pisa2000.dta
 drop _m
-	
+
 *** CREATING IV *************
 
 * merge eligibilities according to Rohwedder-Willis
@@ -93,6 +95,7 @@ csvmerge country gender using ../data/RW_eligibility.csv
 drop _m
 
 * merge eligibilities according to Mazzonna-Peracchi
+* (we lose the countries which have no eligibility age)
 joinby country gender using ../data/MP_eligibility
 gen birthdate = ym(ybirth, mbirth)
     replace birthdate = ym(ybirth, 1) if birthdate == .
@@ -113,7 +116,7 @@ levelsof wave, local(waves)
 foreach author in rw mp {
 
     foreach l in e n { /*early/normal*/
-        
+
         if "`l'" == "e" {
             local rettitle early
             }
@@ -123,11 +126,11 @@ foreach author in rw mp {
 
         gen `l'dist_`author' = age
         lab var `l'dist_`author' "Years after `rettitle' eligibility"
-        replace `l'dist_`author' = age - `rettitle'_`author' 
-        
+        replace `l'dist_`author' = age - `rettitle'_`author'
+
         gen `l'elig_`author' = 0 if age < .
         replace `l'elig_`author' = 1 if `l'dist_`author' >= 0 & `l'dist_`author' < .
-        lab var `l'elig_`author' "Eligible for `rettitle' retirement" 
+        lab var `l'elig_`author' "Eligible for `rettitle' retirement"
 
         foreach w in `waves' {
     		local var `l'elig`w'_`author'
@@ -137,9 +140,9 @@ foreach author in rw mp {
     	 	lab var `var' "Eligible for `rettitle' retirement at wave `w'"
     		drop `var'_t
     	}
-        
+
         local var1 d12_`l'elig_`author'
-        gen `var1' = 0 if wavepart == 124 | wavepart == 12 
+        gen `var1' = 0 if wavepart == 124 | wavepart == 12
         lab var `var1' "Became eligible for `rettitle' retirement between period 1 and 2"
         replace `var1' = 1 if `l'elig2_`author'-`l'elig1_`author' == 1
 
@@ -175,9 +178,8 @@ foreach var of varlist `cogn' {
     }
     gen d12_`var' = `var'2 - `var'1
     gen d24_`var' = `var'4 - `var'2
-} 
+}
 drop temp_*
-
 
 *** LABOR MARKET HISTORY variables creation ********************
 
@@ -192,6 +194,8 @@ drop latest_job_end
 gen yrs_in_ret = iv_year - y_last_job_end
     replace yrs_in_ret = . if yrs_in_ret > age | y_last_job_end == .
     replace yrs_in_ret = 0 if `emp' == 1 | yrs_in_ret < 0
+* clean years in retirement
+
 label variable yrs_in_ret "Years in retirement"
 
 * worked at age 50
