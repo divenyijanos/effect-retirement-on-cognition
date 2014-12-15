@@ -32,7 +32,7 @@ echo -e "OK \n"
 echo "Running Stata do files"
 echo "----------------------"
 STATAPATH=/usr/local/stata13
-statafiles=( derive_clean replication_MP panel_graphs panel_regressions )
+statafiles=( derive_clean replication_MP replication_B panel_graphs panel_regressions )
 
 echo -n "Running merge.do... "
 $STATAPATH/stata -b merge.do $1
