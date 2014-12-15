@@ -7,7 +7,7 @@ use "../data/derived.dta"
 gen retired = 1 - emp_work
 label variable retired "Retired"
 
-/*
+
 * Path of cognitive development by working histories
 *----------------------------------------------------
 
@@ -50,7 +50,7 @@ foreach var of varlist `cogn' {
     graph export $output/`var'_hist_waves.`fmt' replace
     restore
 }
-*/
+
 
 * Path of individual cognitive performance by age
 *-------------------------------------------------

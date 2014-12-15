@@ -14,6 +14,7 @@ lab var twr "Total word recall (first+delayed)"
 
 *age
 gen agesq = age^2
+lab var agesq "Age (sq.)"
 
 foreach num of numlist 1 2 4 {
     gen temp_age`num' = age if wave == `num'
@@ -40,11 +41,19 @@ foreach var of varlist genhealth selfread selfwrite {
 	lab val `var' self
 }
 
+*Number of observation
+*egen nobs = count(country)
+
+* impute y_last_job_end for each wave
+egen latest_job_end = max(y_last_job_end), by(mergeid)
+replace y_last_job_end = latest_job_end if y_last_job_end == .
+drop latest_job_end
 
 * Other definitions for job situation (did paid work, working hours)
 gen emp_work = (emp==1) if emp < .
 replace emp_work = 1 if didpaidwork==1
        /*didpaidwork not asked from those who have jobsit=emp*/
+replace emp_work = 0 if emp_work == . & y_last_job_end < .
 lab var emp_work "Employed (did any paid work last 4 w | jobsit=emp)"
 
 gen ret_work=(ret==1) if ret < .
@@ -83,11 +92,11 @@ gen countrycode = ""
     replace countrycode = "CH" if country == 20
     replace countrycode = "BE" if country == 23
 
-
+/*
 * attach PISA2000 scores
 merge m:1 country using ../data/pisa2000.dta
 drop _m
-
+*/
 *** CREATING IV *************
 
 * merge eligibilities according to Rohwedder-Willis
@@ -96,7 +105,13 @@ drop _m
 
 * merge eligibilities according to Mazzonna-Peracchi
 * (we lose the countries which have no eligibility age)
-joinby country gender using ../data/MP_eligibility
+preserve
+tempfile mp_elig
+import delimited ../data/MP_eligibility.csv, clear
+save `mp_elig'
+restore
+
+joinby country gender using `mp_elig'
 gen birthdate = ym(ybirth, mbirth)
     replace birthdate = ym(ybirth, 1) if birthdate == .
 gen validitydate = ym(y_validfrom, m_validfrom)
@@ -181,57 +196,46 @@ foreach var of varlist `cogn' {
 }
 drop temp_*
 
+*** GENERATE TIME VARIABLES *************************************
+gen ivdate = ym(iv_year, iv_month) /* no missing */
+foreach w in `waves' {
+    gen temp_ivdate_`w' = ivdate if wave == `w'
+    by mergeid: egen ivdate`w' = max(temp_ivdate_`w')
+}
+drop temp_*
+
+gen d12_years = (ivdate2 - ivdate1) / 12
+gen d24_years = (ivdate4 - ivdate2) / 12
+gen d14_years = (ivdate4 - ivdate1) / 12
+
+
 *** LABOR MARKET HISTORY variables creation ********************
 
 local emp emp_work /* choose employment definition */
-
-* impute y_last_job_end
-egen latest_job_end = max(y_last_job_end), by(mergeid)
-replace y_last_job_end = latest_job_end if y_last_job_end == .
-drop latest_job_end
-
-* years in retirement (years after last job)
-gen yrs_in_ret = iv_year - y_last_job_end
-    replace yrs_in_ret = . if yrs_in_ret > age | y_last_job_end == .
-    replace yrs_in_ret = 0 if `emp' == 1 | yrs_in_ret < 0
-* clean years in retirement
-
-label variable yrs_in_ret "Years in retirement"
-
-* worked at age 50
-gen worked_at50 = (age - yrs_in_ret >= 50)
-    replace worked_at50 = . if (age == . | yrs_in_ret == .)
-label variable worked_at50 "Worked at age 50"
-
-* impute worked_at50
-egen worked_ever_at50 = max(worked_at50), by(mergeid)
-    replace worked_ever_at50 = . if worked_ever_at50 == 0
-    replace worked_at50 = worked_ever_at50 if worked_at50 == .
-drop worked_ever_at50
 
 * labor market history by waves
 gen pd_hist = wave*`emp' /*0 if not worked in that wave, wave number if worked*/
 by mergeid: egen tot_hist = total(pd_hist)
 by mergeid: egen nobs_emp = count(`emp')
 gen hist = tot_hist
-replace hist = 100 if tot_hist==1
-replace hist = 110 if tot_hist==3
-replace hist = 101 if tot_hist==5
-replace hist = 111 if tot_hist==7
-replace hist = 10 if tot_hist==2 /*obviously, it means 010*/
-replace hist = 1 if tot_hist==4 /*001*/
-replace hist = 11 if tot_hist==6 /*011*/
-replace hist = . if nobs_emp < nobs
+replace hist = 100 if tot_hist == 1
+replace hist = 110 if tot_hist == 3
+replace hist = 101 if tot_hist == 5
+replace hist = 111 if tot_hist == 7
+replace hist = 10 if tot_hist == 2 /*obviously, it means 010*/
+replace hist = 1 if tot_hist == 4 /*001*/
+replace hist = 11 if tot_hist == 6 /*011*/
 
 replace hist = 100 if nobs==2 & tot_hist==1 & ydec < . /*if known that died*/
 drop tot_hist pd_hist
 lab var hist "working history code"
 
 gen leftlm =0
-replace leftlm = 1 if hist==100 & wave ==2
-replace leftlm = 1 if hist==100 & wave ==4 & wavepart==14
-replace leftlm = 1 if hist==110 & wave ==4
-replace leftlm = . if wave==1
+replace leftlm = 1 if hist == 100 & wave == 2
+replace leftlm = 1 if hist == 100 & wave == 4 & wavepart == 14
+replace leftlm = 1 if hist == 110 & wave == 4
+replace leftlm = . if wave == 1
+replace leftlm = . if emp_work == .
 lab var leftlm "Left labor market in last period"
 
 /*
@@ -252,19 +256,32 @@ gen dp12_wrkhrs=d12_wrkhrs/wrkhrs1
 gen dp24_wrkhrs=d24_wrkhrs/wrkhrs2
 */
 
-*** GENERATE TIME VARIABLES *************************************
-gen ivdate = ym(iv_year, iv_month) /* no missing */
-foreach w in `waves' {
-    gen temp_ivdate_`w' = ivdate if wave == `w'
-    by mergeid: egen ivdate`w' = max(temp_ivdate_`w')
-}
-drop temp_*
 
-gen d12_years = (ivdate2 - ivdate1) / 12
-gen d24_years = (ivdate4 - ivdate2) / 12
-gen d14_years = (ivdate4 - ivdate1) / 12
+* years in retirement (years after last job)
+gen yrs_in_ret = iv_year - y_last_job_end
+    replace yrs_in_ret = . if yrs_in_ret > age | y_last_job_end == .
+    replace yrs_in_ret = 0 if `emp' == 1 | yrs_in_ret < 0
+* clean years in retirement
+replace yrs_in_ret = d12_years/2 ///
+    if d12_years < yrs_in_ret & leftlm == 1 & wave == 2
+replace yrs_in_ret = d24_years/2 ///
+    if d24_years < yrs_in_ret & leftlm == 1 & wave == 4
+replace yrs_in_ret = d14_years/2 ///
+    if d14_years < yrs_in_ret & leftlm == 1 & wave == 4
+label variable yrs_in_ret "Years in retirement"
 
-replace age = agem/12
+* worked at age 50
+gen worked_at50 = (age - yrs_in_ret >= 50)
+    replace worked_at50 = . if (age == . | yrs_in_ret == .)
+label variable worked_at50 "Worked at age 50"
+
+* impute worked_at50
+egen worked_ever_at50 = max(worked_at50), by(mergeid)
+    replace worked_ever_at50 = . if worked_ever_at50 == 0
+    replace worked_at50 = worked_ever_at50 if worked_at50 == .
+drop worked_ever_at50
+
+
 
 compress
 

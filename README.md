@@ -11,5 +11,6 @@ which generate the exhibits of the paper:
 * `merge.do` - used to merge different parts of different waves of SHARE
 * `derive_clean.do` - put together the data of merged waves for analysis (create some useful new variables)
 * `replication_MP.do` - replicate and put into context the results of Mazzonna-Perachi (2012)
+* `replication_B.do` - replicate and put into context the results of Bonsang et al. (2012)
 * `panel_regressions.do` - do the panel analysis (differences)
 * `panel_graphs.do` - do graphs on panel

@@ -27,7 +27,6 @@ use "../data/derived.dta"
 gen retired = 1 - emp_work
 label variable retired "Retired"
 
-
 keep if wave == 1
 
 * REPLICATION OF RW-METHOD WITH TWO IVS
@@ -49,6 +48,11 @@ gen numeracy_st = (numeracy - `r(mean)') / `r(sd)'
 * RW method with MP IV as well (variability of eligibility within country)
 eststo RW: ivreg2 twr_st (retired = eelig_rw nelig_rw), ///
     savefirst savefprefix(fRW)
+local nobs = trim("`: display %9.0f e(N) '")
+tempname nobs_mp
+file open `nobs_mp' using "../text/replication/nobs.txt", write replace
+file write `nobs_mp' `" `nobs' "' /*"technical comment*/
+file close `nobs_mp'
 
 eststo MP: ivreg2 twr_st (retired = eelig_mp nelig_mp), ///
     savefirst savefprefix(fMP)
@@ -61,7 +65,7 @@ esttab fRW* fMP* using "../text/replication/basicIV_first_MP-RW.tex", `esttab_op
               _cons "Constant") ///
     stats(N r2_a, ///
         fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
-        labels(`"Observations"' `"adjusted \$R^{2}\$"')) ///
+        labels(`"Observations"' `"Adjusted \$R^{2}\$"')) ///
     mtitles("\citeasnoun{RW}" "\citeasnoun{MP}")
 
 esttab RW MP using "../text/replication/basicIV_MP-RW.tex", `esttab_opt' ///
@@ -174,7 +178,7 @@ esttab fy* using "../text/replication/RW_to_MP_first.tex", `esttab_opt' ///
     alignment(S) indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
     stats(N r2_a, ///
         fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
-        labels(`"Observations"' `"adjusted \$R^{2}\$"')) ///
+        labels(`"Observations"' `"Adjusted \$R^{2}\$"')) ///
     mtitles("aged 60-64" "aged 50-70" "+ worked at 50" "+ age" "+ country")
 
 eststo clear
@@ -236,5 +240,5 @@ esttab fwrfi* using "../text/replication/RW_to_MP_fwr_first.tex", `esttab_opt' /
     alignment(S) indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
     stats(N r2_a, ///
         fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
-        labels(`"Observations"' `"adjusted \$R^{2}\$"')) ///
+        labels(`"Observations"' `"Adjusted \$R^{2}\$"')) ///
     mtitles("2SLS, all" "2SLS, men" "2SLS, women")
