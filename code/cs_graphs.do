@@ -1,21 +1,21 @@
 clear all
 set more off
-*local fmt "eps, "
-local fmt "png, width(1200)"
+local fmt "eps, "
+*local fmt "png, width(1200)"
 global output ../results
 
 use "../data/derived.dta"
 gen retired = 1 - emp_work
 label variable retired "Retired"
 
-/*
+
 * Estimate separately for countries, get graph about the coefficients
 *---------------------------------------------------------------------
 preserve
 keep if wave == 1
 keep if age >= 50 & age <= 70
 keep if jobsit <= 3
-keep if worked_at50 == 1 
+keep if worked_at50 == 1
 
 quietly sum twr
 gen twr_st = (twr - `r(mean)') / `r(sd)'
@@ -52,16 +52,14 @@ graph export $output/country-coefs.eps, replace
 tabstat yrs_in_ret, by(country)
 
 restore
-*/
-* TWR by age for employed and unemployed, all waves
+
+* TWR by age for employed and unemployed, wave 1, lowess
 *----------------------------------------------------------------
 preserve
 keep if age1 >= 50 & age1 <= 80
 keep if jobsit <= 3
-keep if worked_at50 == 1 
+keep if worked_at50 == 1
 keep if wave==1
-
-*replace age = int(age)
 
 gen byte n=1
 collapse twr (sum) n, by(age retired)
@@ -71,7 +69,25 @@ twoway lowess twr age if retired == 0, mean noweight bw(12) ///
  || lowess twr age if retired == 1, mean noweight bw(12) ///
     legend(order(1 "retired" 2 "employed")) ///
     xtitle("age") ytitle("total word recall (smoothed average)")
-graph export $output/emp_notemp.`fmt' replace
+graph export $output/emp_notemp_lowess.`fmt' replace
 
 restore
 
+* TWR by age for employed and unemployed, wave 1, for each country
+*-------------------------------------------------------------------
+preserve
+keep if age1 >= 50 & age1 <= 80
+keep if jobsit <= 3
+keep if worked_at50 == 1
+keep if wave==1
+drop if country == 19 /* exclude Greece which only in wave 1-2, not in 4 */
+
+gen byte n=1
+collapse twr (sum) n, by(age retired country)
+keep if n>=10
+
+twoway scatter twr age if retired == 1, by(country) ///
+    || scatter twr age if retired == 0, by(country, note("") legend(at(11) pos(0))) ///
+    legend(cols(1) order(1 "retired" 2 "employed")) ///
+    xtitle("age") ytitle("average total word recall")
+graph export $output/emp_notemp.`fmt' replace
