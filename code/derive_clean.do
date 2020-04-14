@@ -10,7 +10,7 @@ use ../data/merged_waves
 
 *total word recall (TWR)
 egen twr=rowtotal(fwr dwr), missing
-lab var twr "Total word recall (first+delayed)"
+lab var twr "Total word recall (TWR)"
 
 *age
 gen agesq = age^2
@@ -277,15 +277,17 @@ label variable worked_at50 "Worked at age 50"
 
 * impute worked_at50
 egen worked_ever_at50 = max(worked_at50), by(mergeid)
-    replace worked_ever_at50 = . if worked_ever_at50 == 0
-    replace worked_at50 = worked_ever_at50 if worked_at50 == .
+    replace worked_at50 = worked_ever_at50
 drop worked_ever_at50
 
+foreach w in `waves' {
+	gen temp_jobsit_`w' = jobsit if wave == `w'
+	by mergeid: egen jobsit`w' = max(temp_jobsit_`w')
+	drop temp_jobsit_`w'
+}
 
 
 compress
 
 label data "workfile for Effect of Retirement on Cognition"
 save ../data/derived, replace
-
-

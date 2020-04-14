@@ -29,6 +29,30 @@ label variable retired "Retired"
 
 keep if wave == 1
 
+* gender differences in cognitive scores (controlling for age) in RW sample
+preserve
+keep if age <= 55
+
+quietly sum twr
+gen twr_st = (twr - `r(mean)') / `r(sd)'
+quietly sum numeracy
+gen numeracy_st = (numeracy - `r(mean)') / `r(sd)'
+
+reg twr_st female i.age
+local twr_female = trim("`: display %9.2f _b[female]'")
+tempname twrdiff_rw
+file open `twrdiff_rw' using "../text/replication/gender-diff-twr-RW.txt", write replace
+file write `twrdiff_rw' `" `twr_female' "' /*"*/
+file close `twrdiff_rw'
+
+reg numeracy_st female i.age
+local num_female = trim("`: display %9.2f _b[female]'")
+tempname numdiff_rw
+file open `numdiff_rw' using "../text/replication/gender-diff-num-RW.txt", write replace
+file write `numdiff_rw' `" `num_female' "' /*"*/
+file close `numdiff_rw'
+restore
+
 * REPLICATION OF RW-METHOD WITH TWO IVS
 *---------------------------------------
 preserve
@@ -75,20 +99,6 @@ esttab RW MP using "../text/replication/basicIV_MP-RW.tex", `esttab_opt' ///
 
 eststo clear
 
-* gender differences in cognitive scores (controlling for age) in RW sample
-reg twr_st female i.age
-local twr_female = trim("`: display %9.2f _b[female]'")
-tempname twrdiff_rw
-file open `twrdiff_rw' using "../text/replication/gender-diff-twr-RW.txt", write replace
-file write `twrdiff_rw' `" `twr_female' "' /*"*/
-file close `twrdiff_rw'
-
-reg numeracy_st female i.age
-local num_female = trim("`: display %9.2f _b[female]'")
-tempname numdiff_rw
-file open `numdiff_rw' using "../text/replication/gender-diff-num-RW.txt", write replace
-file write `numdiff_rw' `" `num_female' "' /*"*/
-file close `numdiff_rw'
 
 
 * REPLICATION OF MP-METHOD
@@ -124,7 +134,8 @@ quietly sum twr
 gen twr_st = (twr - `r(mean)') / `r(sd)'
 quietly sum numeracy
 gen numeracy_st = (numeracy - `r(mean)') / `r(sd)'
-
+quietly sum fluency
+gen fluency_st = (fluency - `r(mean)') / `r(sd)'
 
 * gender differences in cognitive scores (controlling for age) in MP sample
 reg twr_st female i.age
@@ -190,13 +201,17 @@ eststo: xi: ivreg2 twr_st (yrs_in_ret = ndist_mp edist_mp) age i.country
 eststo: xi: ivreg2 twr_st (yrs_in_ret = ndist_mp edist_mp) age female i.country
 eststo: xi: ivreg2 numeracy_st (yrs_in_ret = ndist_mp edist_mp) age i.country
 eststo: xi: ivreg2 numeracy_st (yrs_in_ret = ndist_mp edist_mp) age female i.country
+eststo: xi: ivreg2 fluency_st (yrs_in_ret = ndist_mp edist_mp) age i.country
+eststo: xi: ivreg2 fluency_st (yrs_in_ret = ndist_mp edist_mp) age female i.country
+
+
 
 esttab using "../text/replication/MP_gender_control.tex", `esttab_opt' ///
     alignment(S) indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
     stats(N widstat, ///
         fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
         labels(`"Observations"' `"Weak IV \$F\$ statistic"')) ///
-    mtitles("TWR" "TWR" "numeracy" "numeracy")
+    mtitles("TWR" "TWR" "numeracy" "numeracy" "fluency" "fluency")
 
 eststo clear
 
@@ -205,13 +220,16 @@ eststo: xi: ivreg2 twr_st (yrs_in_ret = ndist_mp edist_mp) age i.country if fema
 eststo: xi: ivreg2 twr_st (yrs_in_ret = ndist_mp edist_mp) age i.country if female == 1
 eststo: xi: ivreg2 numeracy_st (yrs_in_ret = ndist_mp edist_mp) age i.country if female == 0
 eststo: xi: ivreg2 numeracy_st (yrs_in_ret = ndist_mp edist_mp) age i.country if female == 1
+eststo: xi: ivreg2 fluency_st (yrs_in_ret = ndist_mp edist_mp) age i.country if female == 0
+eststo: xi: ivreg2 fluency_st (yrs_in_ret = ndist_mp edist_mp) age i.country if female == 1
+
 
 esttab using "../text/replication/MP_separate_gender.tex", `esttab_opt' ///
     alignment(S) indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
     stats(N widstat, ///
         fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
         labels(`"Observations"' `"Weak IV \$F\$ statistic"')) ///
-    mtitles("TWR, men" "TWR, women" "numeracy, men" "numeracy, women")
+    mtitles("TWR, men" "TWR, women" "numeracy, men" "numeracy, women" "fluency, men" "fluency, women")
 
 eststo clear
 

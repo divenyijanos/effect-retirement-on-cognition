@@ -15,7 +15,7 @@ Description
 - For IV-estimation: dummies of reaching eligibility age plus 1 (retired for at
   least one year)
     - 51-75 years old
-    - Does not take into account the lenght of retirement --> "within average
+    - Does not take into account the length of retirement --> "within average
       effect of about 5 years post retirement"
     - individuals retiring experience a drop in cognitive test score by about 1
       point. This corresponds to about a 10% decrease in cognitive score
@@ -137,6 +137,8 @@ foreach dist in ndist edist {
 *    egen nobs_`var' = count(`var'), by(mergeid)
 *    drop if nobs_`var' < 3
 *}
+
+keep if worked_at50 | y_last_job_end != .
 
 quietly sum twr
 gen twr_st = (twr - `r(mean)') / `r(sd)'

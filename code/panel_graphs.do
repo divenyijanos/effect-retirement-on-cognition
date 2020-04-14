@@ -1,6 +1,7 @@
 clear all
 set more off
-local fmt "eps, "
+*local fmt "eps, "
+local fmt "png, width(1200)"
 global output ../results
 
 use "../data/derived.dta"
@@ -12,11 +13,11 @@ label variable retired "Retired"
 *----------------------------------------------------
 
 keep if age1 >= 50 & age1 <= 70
-keep if jobsit <= 3
+keep if jobsit1 <= 3
 keep if worked_at50 == 1
 
 
-local cogn twr numeracy
+local cogn twr
 
 foreach var of varlist `cogn' {
     if "`var'"=="twr" {
