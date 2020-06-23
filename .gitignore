@@ -1,0 +1,10 @@
+data
+figures
+feedback
+literature
+presentation
+results
+*.pdf
+*.sublime-workspace
+*.txt
+text/replication
