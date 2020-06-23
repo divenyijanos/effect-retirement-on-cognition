@@ -81,6 +81,33 @@ foreach var of varlist `cogn' {
             fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
             labels(`"Observations"' `"\$R^{2}\$"'))
 
+    * separately for gender
+    eststo `var'f0: xi: ivreg2 d12_`var'_sd (yrs_in_ret_12 = edist_mp ndist_mp) d12_years i.country if female == 0, savefirst savefprefix(f12`var'f0)
+    eststo `var'f1: xi: ivreg2 d12_`var'_sd (yrs_in_ret_12 = edist_mp ndist_mp) d12_years i.country if female == 1, savefirst savefprefix(f12`var'f1)
+
+    eststo `var'f0o: xi: reg d12_`var'_sd yrs_in_ret_12 d12_years i.country age if female == 0
+    eststo `var'f1o: xi: reg d12_`var'_sd yrs_in_ret_12 d12_years i.country age if female == 1
+
+    esttab `var'f* using "../text/d12_`var'_gender.tex", `esttab_opt' ///
+        alignment(S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N widstat, ///
+            fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"Weak IV \$F\$ statistic"')) ///
+        mtitles("2SLS, Men" "2SLS, Women" "OLS, Men" "OLS, Women")
+
+    esttab f12`var'f* using "../text/d12_`var'_gender_first.tex", `esttab_opt' ///
+        alignment(S S S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N r2, ///
+            fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"\$R^{2}\$"')) ///
+        mtitles("Men" "Women")
+
+    eststo clear
+
 }
 
 ** W 2-4 ****************************
@@ -150,6 +177,32 @@ foreach var of varlist `cogn' {
             fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
             labels(`"Observations"' `"\$R^{2}\$"'))
 
+    * separately for gender
+    eststo `var'f0: xi: ivreg2 d24_`var'_sd (yrs_in_ret_24 = edist_mp ndist_mp) d24_years i.country if female == 0, savefirst savefprefix(f24`var'f0)
+    eststo `var'f1: xi: ivreg2 d24_`var'_sd (yrs_in_ret_24 = edist_mp ndist_mp) d24_years i.country if female == 1, savefirst savefprefix(f24`var'f1)
+
+    eststo `var'f0o: xi: reg d24_`var'_sd yrs_in_ret_24 d24_years i.country age if female == 0
+    eststo `var'f1o: xi: reg d24_`var'_sd yrs_in_ret_24 d24_years i.country age if female == 1
+
+    esttab `var'f* using "../text/d24_`var'_gender.tex", `esttab_opt' ///
+        alignment(S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N widstat, ///
+            fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"Weak IV \$F\$ statistic"')) ///
+        mtitles("2SLS, Men" "2SLS, Women" "OLS, Men" "OLS, Women")
+
+    esttab f24`var'f* using "../text/d24_`var'_gender_first.tex", `esttab_opt' ///
+        alignment(S S S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N r2, ///
+            fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"\$R^{2}\$"')) ///
+        mtitles("Men" "Women")
+
+    eststo clear
 }
 
 
@@ -219,5 +272,31 @@ foreach var of varlist `cogn' {
         stats(N r2, ///
             fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
             labels(`"Observations"' `"\$R^{2}\$"'))
+
+
+	* separately for gender
+    eststo `var'f0: xi: ivreg2 d14_`var'_sd (yrs_in_ret_14 = edist_mp ndist_mp) d14_years i.country if female == 0, savefirst savefprefix(f14`var'f0)
+    eststo `var'f1: xi: ivreg2 d14_`var'_sd (yrs_in_ret_14 = edist_mp ndist_mp) d14_years i.country if female == 1, savefirst savefprefix(f14`var'f1)
+
+    eststo `var'f0o: xi: reg d14_`var'_sd yrs_in_ret_14 d14_years i.country age if female == 0
+    eststo `var'f1o: xi: reg d14_`var'_sd yrs_in_ret_14 d14_years i.country age if female == 1
+
+    esttab `var'f* using "../text/d14_`var'_gender.tex", `esttab_opt' ///
+        alignment(S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N widstat, ///
+            fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"Weak IV \$F\$ statistic"')) ///
+        mtitles("2SLS, Men" "2SLS, Women" "OLS, Men" "OLS, Women")
+
+    esttab f14`var'f* using "../text/d14_`var'_gender_first.tex", `esttab_opt' ///
+        alignment(S S S) ///
+        indicate(Country dummies = _Icountry*, labels({Yes} {No})) ///
+        varlabels(age "Age at first wave" _cons "Constant") ///
+        stats(N r2, ///
+            fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+            labels(`"Observations"' `"\$R^{2}\$"')) ///
+        mtitles("Men" "Women")
 
 }
