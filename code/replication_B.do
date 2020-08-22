@@ -51,7 +51,8 @@ gen retired = 1 - emp_work
 label variable retired "Retired"
 
 * Sample
-keep if age1 >= 51 & age4 <= 75
+gen max_age = max(age1, age2, age4)
+keep if age1 >= 51 & max_age <= 75
 *keep if wavepart == 124
 encode mergeid, gen(id)
 xtset id wave
