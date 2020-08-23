@@ -50,7 +50,12 @@ use "../data/derived.dta"
 gen retired = 1 - emp_work
 label variable retired "Retired"
 
+keep if worked_at50 | y_last_job_end != .
+gen retired_atleast1 = (yrs_in_ret >= 1)
+    replace retired_atleast1 = . if yrs_in_ret == .
+
 * Sample
+preserve
 gen max_age = max(age1, age2, age4)
 keep if age1 >= 51 & max_age <= 75
 *keep if wavepart == 124
@@ -139,13 +144,9 @@ foreach dist in ndist edist {
 *    drop if nobs_`var' < 3
 *}
 
-keep if worked_at50 | y_last_job_end != .
-
 quietly sum twr
 gen twr_st = (twr - `r(mean)') / `r(sd)'
 
-gen retired_atleast1 = (yrs_in_ret >= 1)
-    replace retired_atleast1 = . if yrs_in_ret == .
 eststo ret: xtivreg2 twr_st (retired = nelig_mp eelig_mp) age agesq, ///
     fe cluster(mergeid) savefirst savefprefix(f)
 eststo ret1: xtivreg2 twr_st (retired_atleast1 = nelig_mp eelig_mp) age agesq, ///
@@ -167,14 +168,60 @@ esttab f* using "../text/replication/basic_B_first.tex", `esttab_opt' ///
         labels(`"Observations"' `"Within-\$R^{2}\$"')) ///
     mtitles("Retired" "Retired for at least 1 year")
 
-/*
-* Logarithmic specification
-foreach var of varlist yrs_in_ret edist_mp ndist_mp {
-    gen l_`var' = log(`var' + 1)
-}
+	
+* Robustness check
+restore
+preserve
+keep if age1 >= 51 & age2 <= 75
+keep if wave == 1 | wave == 2
+encode mergeid, gen(id)
+xtset id wave
 
-eststo lret: xtivreg2 twr_st (l_yrs_in_ret = l_ndist_mp l_edist_mp) age agesq, ///
-    fe cluster(mergeid) savefirst savefprefix(lf)
+quietly sum twr
+gen twr_st = (twr - `r(mean)') / `r(sd)'
 
-esttab lret
-esttab lf*
+eststo rob12: xtivreg2 twr_st (retired_atleast1 = nelig_mp eelig_mp) age agesq, ///
+    fe cluster(mergeid) savefirst savefprefix(fr)
+
+restore
+preserve
+keep if age2 >= 51 & age4 <= 75
+keep if wave == 2 | wave == 4
+encode mergeid, gen(id)
+xtset id wave
+
+quietly sum twr
+gen twr_st = (twr - `r(mean)') / `r(sd)'
+
+eststo rob24: xtivreg2 twr_st (retired_atleast1 = nelig_mp eelig_mp) age agesq, ///
+    fe cluster(mergeid) savefirst savefprefix(fr)
+	
+restore
+keep if age1 >= 51 & age4 <= 75
+keep if wavepart == 124
+encode mergeid, gen(id)
+xtset id wave
+
+quietly sum twr
+gen twr_st = (twr - `r(mean)') / `r(sd)'
+
+eststo rob124: xtivreg2 twr_st (retired_atleast1 = nelig_mp eelig_mp) age agesq, ///
+    fe cluster(mergeid) savefirst savefprefix(fr)
+
+	
+	
+esttab rob* using "../text/replication/rob_B.tex", `esttab_opt' ///
+    rename(retired "ret" retired_atleast1 "ret") ///
+    varlabels(ret "Retired for at least 1 year" ///
+              _cons "Constant") ///
+    alignment(S S) ///
+    stats(N widstat, ///
+        fmt(%9.0fc 2) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+        labels(`"Observations"' `"Weak IV F statistic"')) ///
+    mtitles("wave 1-2" "wave 2-4" "wave 1-2-4")
+esttab fr* using "../text/replication/rob_B_first.tex", `esttab_opt' ///
+    alignment(S S) ///
+    stats(N, ///
+        fmt(%9.0fc 4) layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{S}{@}") ///
+        labels(`"Observations"')) ///
+    mtitles("wave 1-2" "wave 2-4" "wave 1-2-4")
