@@ -1,4 +1,4 @@
-mlibrary(data.table)
+library(data.table)
 library(ggplot2)
 
 source("code/set_my_theme.R")
@@ -21,10 +21,11 @@ all_coefs <- data.table(
     se = c(0.013, 0.013, 0.012, 0.013, 0.013, 0.011, 0.0081, 0.0020, 0.0073, 0.0082, 0.0021, 0.0075, 0.0060, 0.0055, 0.0055, 0.0065, 0.0059, 0.0060)
 )
 
-coefs <- rbind(gender_coefs, all_coefs)
+coefs <- rbind(gender_coefs, all_coefs) %>%
+    .[, score := ordered(score, labels = c("TWR", "numeracy", "fluency"))]
 
 ggplot(coefs, aes(x = wave, y = beta, color = gender)) +
-    geom_hline(yintercept = 0) +
+    geom_hline(yintercept = 0, size = 0.2) +
     geom_point(position = position_dodge(width = 0.5)) +
     geom_linerange(aes(ymin = beta - 1.96 * se, ymax = beta + 1.96 * se), position = position_dodge(width = 0.5)) +
     scale_color_manual(values = c(THIRD_COLOR, MAIN_COLOR, SECONDARY_COLOR)) +
