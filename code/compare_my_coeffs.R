@@ -30,6 +30,6 @@ ggplot(coefs, aes(x = wave, y = beta, color = gender)) +
     geom_linerange(aes(ymin = beta - 1.96 * se, ymax = beta + 1.96 * se), position = position_dodge(width = 0.5)) +
     scale_color_manual(values = c(THIRD_COLOR, MAIN_COLOR, SECONDARY_COLOR)) +
     facet_grid(method ~ score) +
-    labs(x = "Period", y = "Estimate") +
+    labs(x = "Period", y = "Estimate", color = "") +
     theme(legend.position = "bottom")
 ggsave("results/my_coeffs_by_gender.eps", width = 8, height = 6, scale = 0.85)
