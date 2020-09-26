@@ -27,4 +27,4 @@ relevant_data[,
     facet_wrap(~ country) +
     labs(y = "Mean score on total word recall") +
     theme(legend.position = c(.85, 0.25), legend.justification = c("right", "top"))
-ggsave("results/twr_hist_waves_R.eps", width = 8, height = 6, scale = 0.85)
+ggsave("results/twr_hist_waves_R.eps", width = 8, height = 4, scale = 0.85)
